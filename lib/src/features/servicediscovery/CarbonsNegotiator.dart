@@ -17,8 +17,7 @@ class CarbonsNegotiator extends Negotiator {
 
   static const TAG = 'CarbonsNegotiator';
 
-  static final Map<Connection, CarbonsNegotiator> _instances =
-      <Connection, CarbonsNegotiator>{};
+  static final Map<Connection, CarbonsNegotiator> _instances = {};
 
 
   static CarbonsNegotiator getInstance(Connection connection) {
@@ -30,12 +29,17 @@ class CarbonsNegotiator extends Negotiator {
     return instance;
   }
 
+  static void removeInstance(Connection connection) {
+    _instances[connection]?._subscription?.cancel();
+    _instances.remove(connection);
+  }
+
   final Connection _connection;
 
   bool enabled = false;
 
-  StreamSubscription<AbstractStanza> _subscription;
-  IqStanza _myUnrespondedIqStanza;
+  StreamSubscription<AbstractStanza?>? _subscription;
+  late IqStanza _myUnrespondedIqStanza;
 
   CarbonsNegotiator(this._connection) {
     expectedName = 'urn:xmpp:carbons';
@@ -44,7 +48,7 @@ class CarbonsNegotiator extends Negotiator {
   @override
   List<Nonza> match(List<Nonza> requests) {
     return (requests.where((element) =>
-        element != null && element is Feature &&
+         element is Feature &&
         ((element).xmppVar == 'urn:xmpp:carbons:2' ||
             (element).xmppVar == 'urn:xmpp:carbons:rules:0'))).toList();
   }
@@ -69,11 +73,11 @@ class CarbonsNegotiator extends Negotiator {
     _connection.writeStanza(iqStanza);
   }
 
-  void checkStanzas(AbstractStanza stanza) {
+  void checkStanzas(AbstractStanza? stanza) {
     if (stanza is IqStanza && stanza.id == _myUnrespondedIqStanza.id) {
       enabled = stanza.type == IqStanzaType.RESULT;
       state = NegotiatorState.DONE;
-      _subscription.cancel();
+      _subscription?.cancel();
     }
   }
 }

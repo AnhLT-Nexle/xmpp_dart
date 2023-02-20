@@ -14,8 +14,7 @@ import 'Feature.dart';
 class MAMNegotiator extends Negotiator {
   static const TAG = 'MAMNegotiator';
 
-  static final Map<Connection, MAMNegotiator> _instances =
-      <Connection, MAMNegotiator>{};
+  static final Map<Connection, MAMNegotiator> _instances = {};
 
   static MAMNegotiator getInstance(Connection connection) {
     var instance = _instances[connection];
@@ -26,9 +25,14 @@ class MAMNegotiator extends Negotiator {
     return instance;
   }
 
-  IqStanza _myUnrespondedIqStanza;
+  static void removeInstance(Connection connection) {
+    _instances[connection]?._subscription?.cancel();
+    _instances.remove(connection);
+  }
 
-  StreamSubscription<AbstractStanza> _subscription;
+  late IqStanza _myUnrespondedIqStanza;
+
+  StreamSubscription<AbstractStanza?>? _subscription;
 
   final Connection _connection;
 
@@ -36,7 +40,7 @@ class MAMNegotiator extends Negotiator {
 
   bool enabled = false;
 
-  bool hasExtended;
+  bool? hasExtended;
 
   MAMNegotiator(this._connection) {
     expectedName = 'urn:xmpp:mam';
@@ -82,7 +86,7 @@ class MAMNegotiator extends Negotiator {
     _connection.writeStanza(iqStanza);
   }
 
-  void checkStanzas(AbstractStanza stanza) {
+  void checkStanzas(AbstractStanza? stanza) {
     if (stanza is IqStanza && stanza.id == _myUnrespondedIqStanza.id) {
       var x = stanza.getChild('query')?.getChild('x');
       if (x != null) {
@@ -112,7 +116,7 @@ class MAMNegotiator extends Negotiator {
         });
       }
       state = NegotiatorState.DONE;
-      _subscription.cancel();
+      _subscription?.cancel();
     }
   }
 
